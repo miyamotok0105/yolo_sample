@@ -1,5 +1,3 @@
-# yolo_sample
-
 
 # Get data
 
