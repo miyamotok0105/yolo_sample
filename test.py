@@ -18,6 +18,7 @@ from utils import WeightReader, decode_netout, draw_boxes, normalize
 
 LABELS = ['RBC']
 
+
 IMAGE_H, IMAGE_W = 416, 416
 GRID_H,  GRID_W  = 13 , 13
 BOX              = 5
@@ -463,19 +464,19 @@ def custom_loss(y_true, y_pred):
 
 # train
 
-early_stop = EarlyStopping(monitor='val_loss', 
-                           min_delta=0.001, 
-                           patience=3, 
-                           mode='min', 
-                           verbose=1)
+#early_stop = EarlyStopping(monitor='val_loss', 
+#                           min_delta=0.001, 
+#                           patience=3, 
+#                           mode='min', 
+#                           verbose=1)
 
-checkpoint = ModelCheckpoint('weights_blood.h5', 
-                             monitor='val_loss', 
-                             verbose=1, 
-                             save_best_only=True, 
-                             mode='min', 
-                             period=1)
-#model.load_weights('weights_blood.h5')
+#checkpoint = ModelCheckpoint('weights_blood.h5', 
+#                             monitor='val_loss', 
+#                             verbose=1, 
+#                             save_best_only=True, 
+#                             mode='min', 
+#                             period=1)
+model.load_weights('weights_blood.h5')
 
 tb_counter  = len([log for log in os.listdir(os.path.expanduser('~/')) if 'blood' in log]) + 1
 tensorboard = TensorBoard(log_dir=os.path.expanduser('~/') + 'blood' + '_' + str(tb_counter), 
@@ -483,17 +484,47 @@ tensorboard = TensorBoard(log_dir=os.path.expanduser('~/') + 'blood' + '_' + str
                           write_graph=True, 
                           write_images=False)
 
-optimizer = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+#optimizer = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 #optimizer = SGD(lr=1e-4, decay=0.0005, momentum=0.9)
 #optimizer = RMSprop(lr=1e-5, rho=0.9, epsilon=1e-08, decay=0.0)
 
-model.compile(loss=custom_loss, optimizer=optimizer)
+#model.compile(loss=custom_loss, optimizer=optimizer)
 
-model.fit_generator(generator        = train_batch, 
-                    steps_per_epoch  = len(train_batch), 
-                    epochs           = 100, 
-                    verbose          = 1,
-                    validation_data  = valid_batch,
-                    validation_steps = len(valid_batch),
-                    callbacks        = [early_stop, checkpoint, tensorboard], 
-                    max_queue_size   = 3)
+#model.fit_generator(generator        = train_batch, 
+#                    steps_per_epoch  = len(train_batch), 
+#                    epochs           = 100, 
+#                    verbose          = 1,
+#                    validation_data  = valid_batch,
+#                    validation_steps = len(valid_batch),
+#                    callbacks        = [early_stop, checkpoint, tensorboard], 
+#                    max_queue_size   = 3)
+
+
+
+
+
+
+#model.load_weights("weights_blood.h5")                                                                                                                       
+
+dummy_array = np.zeros((1,1,1,1,TRUE_BOX_BUFFER,4))                                                                                                          
+
+image = cv2.imread("./dataset/RedBlodCellDetection/JPEGImages/BloodImage_00180.jpg")
+
+plt.figure(figsize=(10,10))
+
+input_image = cv2.resize(image, (416, 416))
+input_image = input_image / 255.
+input_image = input_image[:,:,::-1]
+input_image = np.expand_dims(input_image, 0)
+
+netout = model.predict([input_image, dummy_array])
+
+boxes = decode_netout(netout[0], 
+                      obj_threshold=0.5,
+                      nms_threshold=NMS_THRESHOLD,
+                      anchors=ANCHORS, 
+                      nb_class=CLASS)
+image = draw_boxes(image, boxes, labels=LABELS)
+plt.imsave("output.jpg", image[:,:,::-1])
+
+#plt.imshow(image[:,:,::-1]); plt.show()
